@@ -17,6 +17,7 @@ mock = "~=5.1"
 torch = "~=2.2"
 torchvision = "~=0.17"
 flask-ml = "0.2.2"
+onnxruntime = "*"
 
 [dev-packages]
 
