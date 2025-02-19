@@ -101,16 +101,28 @@ def preprocess(dir_path):
     return img_transformed
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-input_image = preprocess('input_images/cars.png')
+# input_image = preprocess('input_images/image2.jpg')
+# print(input_image.tensors.shape)
 
 model = torchvision.models.detection.retinanet_resnet50_fpn(
     pretrained=False, num_classes=91,
     pretrained_backbone=False
 )
 
+dummy_input = torch.randn(1, 3, 800, 1333)
+
 state_dict = torch.load('ml/models/retinanet_resnet50_fpn_coco-eeacb38b.pth', map_location=device)
 model.load_state_dict(state_dict)
 model.to(device).eval()
-import pdb; pdb.set_trace()
-torch.onnx.export(model, input_image.tensors, "obj_detection_model.onnx", export_params=True, opset_version=16, do_constant_folding=True, input_names=["input"], output_names=["output"], dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}})
-
+torch.onnx.export(
+    model,
+    dummy_input,
+    "model.onnx",
+    input_names=["input"],
+    output_names=["output"],
+    dynamic_axes={
+        "input": {2: "height", 3: "width"},  # Dynamic height and width
+        "output": {2: "height_out", 3: "width_out"}  # Adjust if output is dynamic
+    },
+    opset_version=11  # Use opset supporting dynamic Resize (11+)
+)

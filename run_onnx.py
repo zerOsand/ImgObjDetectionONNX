@@ -9,12 +9,20 @@ import onnxruntime as ort
 import torchvision.transforms.v2 as T
 from torchvision.io import ImageReadMode, image
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
+from torchvision.models.detection.anchor_utils import AnchorGenerator
 
 class ObjectDetectionProcessing:
     def __init__(self, resolution=800):
         self.resolution = resolution
         self.valid_extenions = (".jpg", ".jpeg", ".png")
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        # For postprocessing; gets defined in `preprocess` after image path is defined
+        self.path = None
+
+    def postprocess(self, output): 
+        # todo
+        return {}
 
     def preprocess(self, path):
         min_size = 800
@@ -27,7 +35,16 @@ class ObjectDetectionProcessing:
         fnames, original_imgs, scaled_images = self.load_image(path) 
 
         img_transformed, _ = transform(scaled_images, targets=None)
+
+        self.path = path
+
         return img_transformed.tensors.numpy()
+    
+    def anchorgen(self):
+        anchor_sizes = tuple((x, int(x * 2 ** (1.0 / 3)), int(x * 2 ** (2.0 / 3))) for x in [32, 64, 128, 256, 512])
+        aspect_ratios = ((0.5, 1.0, 2.0),) * len(anchor_sizes)
+        anchor_generator = AnchorGenerator(anchor_sizes, aspect_ratios)
+        return anchor_generator
 
     def load_image(self, input_image):
         """
@@ -95,10 +112,6 @@ class ObjectDetectionProcessing:
             ])
         return _transform(image)
 
-    def postprocess(self, output): 
-        # todo
-        return {}
-
 class ONNXDetectionModel:
     def __init__(self, model_path):
         self.odp = ObjectDetectionProcessing()
@@ -107,12 +120,23 @@ class ONNXDetectionModel:
             providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
         )
 
-    def predict(self, image_path: str):
+    def predict(self, image_path: str, min_percent: float):
         input = self.odp.preprocess(image_path)
         output = self.session.run(None, {"input": input})
 
         if output is None:
             return []
+    
+        # Remove values <= min_percent
+        mask = output[1] >= min_percent
+
+        output = [output[0][mask],
+                  output[1][mask],
+                  output[2][mask]]
+
+        # for idx, pred in enumerate(output):
+        #     for id in range(pred["labels"].shape[0]):
+        #         if pred["scores"][id] >= self.
 
         # out = self.odp.postprocess(output[0]) # todo
         # out["image_path"] = image_path
@@ -129,4 +153,4 @@ class ONNXDetectionModel:
 
 
 model = ONNXDetectionModel('obj_detection_model.onnx')
-model.predict('input_images/cars.png')
+model.predict('input_images/cars.png', 0.0)
