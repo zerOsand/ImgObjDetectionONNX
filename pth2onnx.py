@@ -109,13 +109,13 @@ model = torchvision.models.detection.retinanet_resnet50_fpn(
     pretrained_backbone=False
 )
 
-dummy_input = torch.randn(1, 3, 800, 1333)
+dummy_input = torch.randn(1, 3, 1333, 800)
 
 state_dict = torch.load('ml/models/retinanet_resnet50_fpn_coco-eeacb38b.pth', map_location=device)
 model.load_state_dict(state_dict)
 model.to(device).eval()
 torch.onnx.export(
-    model,
+    model, 
     dummy_input,
     "model.onnx",
     input_names=["input"],

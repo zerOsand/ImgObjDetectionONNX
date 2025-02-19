@@ -26,6 +26,8 @@ class ObjectDetectionProcessing:
         self.scale = None
         self.x_offset = None
         self.y_offset = None
+        
+        self.orig_img = None
 
     def postprocess_boxes(self, boxes: np.ndarray) -> np.ndarray:
         """Postprocess bounding boxes to original image dimensions."""
@@ -33,8 +35,8 @@ class ObjectDetectionProcessing:
             return np.zeros((0, 4), dtype=np.int32)
         boxes = boxes.astype(np.float32)
         # Adjust for crop offset
-        boxes[:, [0, 2]] += self.x_offset  # x coordinates
-        boxes[:, [1, 3]] += self.y_offset  # y coordinates
+        # boxes[:, [0, 2]] += self.x_offset  # x coordinates
+        # boxes[:, [1, 3]] += self.y_offset  # y coordinates
         # Scale back to original dimensions
         boxes /= self.scale
         # Clip to image boundaries
@@ -43,18 +45,78 @@ class ObjectDetectionProcessing:
         boxes[:, 2] = np.clip(boxes[:, 2], 0, self.original_width)
         boxes[:, 3] = np.clip(boxes[:, 3], 0, self.original_height)
         return boxes.astype(np.int32)
-    
+
+        # if boxes is None or len(boxes) == 0:
+        #     return np.zeros((0, 4), dtype=np.int32)
+        
+        # for bbox in boxes:
+        #     x1 = int(bbox[0] / self.scale)
+        #     y1 = int(bbox[1] / self.scale)
+        #     x2 = int(bbox[2] / self.scale)
+        #     y2 = int(bbox[3] / self.scale)
+        #     label_name = labels[int(classification[idxs[0][j]])]
+        #     # print(bbox, classification.shape)
+        #     score = scores[j]
+        #     caption = '{} {:.3f}'.format(label_name, score)
+        #     # draw_caption(img, (x1, y1, x2, y2), label_name)
+        #     self.draw_caption(self.orig_img, (x1, y1, x2, y2), caption)
+        #     cv2.rectangle(self.orig_img, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=2)
+            
+    def draw_caption(self, image, box, caption):
+        b = np.array(box).astype(int)
+        cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2)
+        cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+
+
     def preprocess(self, path: str) -> np.ndarray:
-        """Preprocess image to 800x800 and normalize."""
-        min_size = 800
-        max_size = 1333
-        image_mean = [0.485, 0.456, 0.406]
-        image_std = [0.229, 0.224, 0.225]
-        transform = GeneralizedRCNNTransform(min_size, max_size, image_mean, image_std)
-        # Load image and apply transforms
-        fnames, original_imgs, scaled_images = self.load_image(path)
-        img_transformed, _ = transform(scaled_images, targets=None)
-        return img_transformed.tensors.numpy()
+        # """Preprocess image to 800x800 and normalize."""
+        # min_size = 800
+        # max_size = 1333
+        # image_mean = [0.485, 0.456, 0.406]
+        # image_std = [0.229, 0.224, 0.225]
+        # transform = GeneralizedRCNNTransform(min_size, max_size, image_mean, image_std)
+        # # Load image and apply transforms
+        # fnames, original_imgs, scaled_images = self.load_image(path)
+        # img_transformed, _ = transform(scaled_images, targets=None)
+        # return img_transformed.tensors.numpy()
+
+        image = cv2.imread(path)
+        self.orig_img = image.copy()
+
+        rows, cols, cns = image.shape
+
+        smallest_side = min(rows, cols)
+
+        # rescale the image so the smallest side is min_side
+        min_side = 800
+        max_side = 1333
+        scale = min_side / smallest_side
+
+        # check if the largest side is now greater than max_side, which can happen
+        # when images have a large aspect ratio
+        largest_side = max(rows, cols)
+
+        if largest_side * scale > max_side:
+            scale = max_side / largest_side
+
+        self.scale = scale
+        # resize the image with the computed scale
+        image = cv2.resize(image, (int(round(cols * scale)), int(round((rows * scale)))))
+        rows, cols, cns = image.shape
+
+        pad_w = 32 - rows % 32
+        pad_h = 32 - cols % 32
+
+        new_image = np.zeros((rows + pad_w, cols + pad_h, cns)).astype(np.float32)
+        new_image[:rows, :cols, :] = image.astype(np.float32)
+        image = new_image.astype(np.float32)
+        image /= 255
+        image -= [0.485, 0.456, 0.406]
+        image /= [0.229, 0.224, 0.225]
+        image = np.expand_dims(image, 0)
+        image = np.transpose(image, (0, 3, 1, 2))
+
+        return image
     
     def load_image(self, input_image: Union[str, np.ndarray, Image.Image]) -> Tuple[List[str], List[torch.Tensor], List[torch.Tensor]]:
         """Load and preprocess image, capturing original dimensions and crop parameters."""
@@ -182,24 +244,12 @@ class ONNXDetectionModel:
         print(f"Saved visualization to {output_path}")
 
 # Example usage
-image_path = 'input_images/cars.png'
+image_path = 'input_images/carvision.png'
 
-output_path = 'test_out/cars_with_boxes.png'
+output_path = 'test_out/carvision_w_boxes.png'
 
-model = ONNXDetectionModel('obj_detection_model.onnx')
+model = ONNXDetectionModel('model.onnx')
 
 detections = model.predict(image_path, 0.2)
 
 model.visualize_and_save(image_path, detections, output_path)
-
-#-----
-def resize(im, img_size=640, square=False):
-    # Aspect ratio resize
-    if square:
-        im = cv2.resize(im, (img_size, img_size))
-    else:
-        h0, w0 = im.shape[:2]  # orig hw
-        r = img_size / max(h0, w0)  # ratio
-        if r != 1:  # if sizes are not equal
-            im = cv2.resize(im, (int(w0 * r), int(h0 * r)))
-    return im
