@@ -9,6 +9,10 @@ from typing import Union, List, Tuple
 import torchvision.transforms.v2 as T
 from torchvision.io import ImageReadMode, image
 
+import warnings
+
+warnings.simplefilter("ignore", UserWarning)
+
 
 class ObjectDetectionProcessing:
     def __init__(self, resolution=800):
@@ -134,6 +138,11 @@ class ObjectDetectionProcessing:
 
 class ONNXDetectionModel:
     def __init__(self, model_path: str):
+        if not model_path.endswith(".onnx"):
+            raise ValueError(
+                f"Invalid model path: {model_path}. File must be an ONNX model."
+            )
+
         self.odp = ObjectDetectionProcessing()
 
         self.session = ort.InferenceSession(
@@ -142,7 +151,7 @@ class ONNXDetectionModel:
 
         self.__classes = self.__load_classes(
             os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "coco91_classes.txt"
+                os.path.dirname(os.path.abspath(__file__)), "ml/coco91_classes.txt"
             )
         )
 
