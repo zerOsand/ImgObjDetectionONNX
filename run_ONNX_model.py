@@ -137,7 +137,7 @@ class ONNXDetectionModel:
             return []
         boxes, scores, labels = outputs[0], outputs[1], outputs[2]
         # Filter based on confidence
-        mask = scores >= min_confidence
+        mask = scores >= (min_confidence / 100) 
         filtered_boxes = boxes[mask]
         filtered_scores = scores[mask]
         filtered_labels = labels[mask]
@@ -173,13 +173,17 @@ class ONNXDetectionModel:
         cv2.imwrite(output_path, image)
         print(f"Saved visualization to {output_path}")
 
-# Example usage
-image_path = 'input_images/carvision.png'
+# # Example usage
+# image_path = 'input_images/carvision.png'
 
-output_path = 'test_out/carvision_w_boxes.png'
+# output_path = 'test_out/carvision_w_boxes.png'
 
-model = ONNXDetectionModel('model.onnx')
+# threshold = 20 # as a percent
 
-detections = model.predict(image_path, 0.2)
+# model = ONNXDetectionModel('model.onnx')
 
-model.visualize_and_save(image_path, detections, output_path)
+# detections = model.predict(image_path, threshold)
+
+# import pdb; pdb.set_trace()
+
+# model.visualize_and_save(image_path, detections, output_path)

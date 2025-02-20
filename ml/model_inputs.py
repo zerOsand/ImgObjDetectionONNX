@@ -7,3 +7,4 @@ class DetectionInputs(TypedDict):
     input_path: FileInput
     output_img: FileInput
     output_csv: FileInput
+    model_path: FileInput

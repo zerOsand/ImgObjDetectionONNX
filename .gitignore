@@ -6,3 +6,4 @@ input_images/.DS_Store
 /ml/__pycache__
 model.onnx
 /.vscode
+*.pyc

@@ -68,23 +68,22 @@ class Model_Handler(Handler):
 
 class Input_Handler(Handler):
     @staticmethod
-    def parse_inputs(inputs: DetectionInputs) -> tuple[str, str, str]:
+    def parse_inputs(inputs: DetectionInputs) -> tuple[str, str, str, str]:
 
         input_path = inputs["input_path"].path
         output_img_path = inputs["output_img"].path
         output_csv_path = inputs["output_csv"].path
+        model_path = inputs["model_path"].path
 
-        return (input_path, output_img_path, output_csv_path)
+        return (input_path, output_img_path, output_csv_path, model_path)
 
 
 class Parameter_Handler(Handler):
     @staticmethod
-    def parse_parameters(parameters: DetectionParameters) -> tuple[int, Model_Type, str]:
+    def parse_parameters(parameters: DetectionParameters) -> int:
         min_perc_prob = parameters["min_perc_prob"]
-        model_type = Model_Handler.get_type(parameters["model_type"])
-        model_path = Model_Handler.get_path(model_type).value
 
-        return (min_perc_prob, model_type, model_path)
+        return min_perc_prob
 
 
 class Results_Handler(Handler):
@@ -96,11 +95,18 @@ class Results_Handler(Handler):
             for item in results:
                 csv_writer.writerow(
                     [
-                        item["name"],
-                        item["percentage_probability"],
-                        item["box_points"][0],  # xmin
-                        item["box_points"][1],  # ymin
-                        item["box_points"][2],  # xmax
-                        item["box_points"][3],  # ymax
+                        item[2],
+                        item[1],
+                        item[0][0], # xmin
+                        item[0][1], # ymin
+                        item[0][2], # xmax
+                        item[0][3], # ymax
                     ]
                 )
+
+# item["name"],
+# item["percentage_probability"],
+# item["box_points"][0],  # xmin
+# item["box_points"][1],  # ymin
+# item["box_points"][2],  # xmax
+# item["box_points"][3],  # ymax

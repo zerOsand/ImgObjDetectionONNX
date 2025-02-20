@@ -7,7 +7,6 @@ from ml.model_utils import *
 
 warnings.filterwarnings("ignore")
 
-
 class Detection_Model:
     def __init__(self, model_type: Model_Type, model_path):
         self.detector_model = ObjectDetection()
@@ -20,8 +19,6 @@ class Detection_Model:
         Model_Handler.set_model_type(self.detector_model, self.model_type)
 
         full_model_path = os.path.abspath(os.path.join(self.exec_path, "ml", self.model_path))
-
-        self.detector_model.setModelPath(full_model_path)
         self.detector_model.setModelPath(full_model_path)
         self.detector_model.loadModel()
 
