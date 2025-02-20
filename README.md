@@ -86,8 +86,13 @@ For the command line tool, you will need to specify the path to your input image
 
 Simply run:
 ```bash
-python cmd_interface.py detech -h 
+python cmd_interface.py detect -h 
 ```
-To learn how to pass in the arguments
+to learn how to pass in the arguments.
+
+Here is an example command:
+```bash
+python cmd_interface.py detect --input_path {path_to_input_img} --output_img {path_to_output_img} --output_csv {path_to_output_csv} --model_path {path_to_ONNX_model}
+```
 
 There are sample images present in the `input_images` directory and a `output_images` directory where you can store your results as a way to test out this project.
