@@ -53,10 +53,6 @@ We want to download the models and store them inside `ml/models/`. To achieve th
 cd ml
 mkdir models
 cd models
-# Download tiny-yolov3 (size = 34 mb)
-wget https://github.com/OlafenwaMoses/ImageAI/releases/download/3.0.0-pretrained/tiny-yolov3.pt 
-# Download yolov3 (size = 237 mb)
-wget https://github.com/OlafenwaMoses/ImageAI/releases/download/3.0.0-pretrained/yolov3.pt
 # Download retina-net (size = 130 mb)
 wget https://github.com/OlafenwaMoses/ImageAI/releases/download/3.0.0-pretrained/retinanet_resnet50_fpn_coco-eeacb38b.pth
 
