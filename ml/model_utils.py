@@ -31,7 +31,14 @@ class Parameter_Handler(Handler):
 class Results_Handler(Handler):
     @staticmethod
     def write_csv_results(results, output_csv_path) -> None:
-        classes = [line.strip() for line in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "coco91_classes.txt")).readlines()]
+        classes = [
+            line.strip()
+            for line in open(
+                os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)), "coco91_classes.txt"
+                )
+            ).readlines()
+        ]
 
         with open(output_csv_path, "w", newline="") as out:
             csv_writer = csv.writer(out)
