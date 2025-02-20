@@ -42,7 +42,9 @@ class Model_Handler(Handler):
                 Model_Type.tiny_yolov3
                 if type_in_str == "tiny-yolov3"
                 else (
-                    Model_Type.retina_net if type_in_str == "retina-net" else Exception("No such model type!")
+                    Model_Type.retina_net
+                    if type_in_str == "retina-net"
+                    else Exception("No such model type!")
                 )
             )
         )
@@ -58,7 +60,11 @@ class Model_Handler(Handler):
             else (
                 Model_Path.tiny_yolov3
                 if model_type == Model_Type.tiny_yolov3
-                else Model_Path.yolov3 if model_type == Model_Type.yolov3 else Exception("No such model!")
+                else (
+                    Model_Path.yolov3
+                    if model_type == Model_Type.yolov3
+                    else Exception("No such model!")
+                )
             )
         )
         if isinstance(result, Exception):
@@ -69,7 +75,6 @@ class Model_Handler(Handler):
 class Input_Handler(Handler):
     @staticmethod
     def parse_inputs(inputs: DetectionInputs) -> tuple[str, str, str, str]:
-
         input_path = inputs["input_path"].path
         output_img_path = inputs["output_img"].path
         output_csv_path = inputs["output_csv"].path
@@ -91,22 +96,17 @@ class Results_Handler(Handler):
     def write_csv_results(results, output_csv_path) -> None:
         with open(output_csv_path, "w", newline="") as out:
             csv_writer = csv.writer(out)
-            csv_writer.writerow(["name", "percentage_probability", "xmin", "ymin", "xmax", "ymax"])
+            csv_writer.writerow(
+                ["name", "percentage_probability", "xmin", "ymin", "xmax", "ymax"]
+            )
             for item in results:
                 csv_writer.writerow(
                     [
                         item[2],
                         item[1],
-                        item[0][0], # xmin
-                        item[0][1], # ymin
-                        item[0][2], # xmax
-                        item[0][3], # ymax
+                        item[0][0],  # xmin
+                        item[0][1],  # ymin
+                        item[0][2],  # xmax
+                        item[0][3],  # ymax
                     ]
                 )
-
-# item["name"],
-# item["percentage_probability"],
-# item["box_points"][0],  # xmin
-# item["box_points"][1],  # ymin
-# item["box_points"][2],  # xmax
-# item["box_points"][3],  # ymax

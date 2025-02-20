@@ -9,6 +9,7 @@ from typing import Union, List, Tuple
 import torchvision.transforms.v2 as T
 from torchvision.io import ImageReadMode, image
 
+
 class ObjectDetectionProcessing:
     def __init__(self, resolution=800):
         self.resolution = resolution
@@ -35,17 +36,26 @@ class ObjectDetectionProcessing:
         boxes[:, 2] = np.clip(boxes[:, 2], 0, self.original_width)
         boxes[:, 3] = np.clip(boxes[:, 3], 0, self.original_height)
         return boxes.astype(np.int32)
-    
+
     def draw_caption(self, image, box, caption):
         b = np.array(box).astype(int)
-        cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2)
-        cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
-
+        cv2.putText(
+            image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2
+        )
+        cv2.putText(
+            image,
+            caption,
+            (b[0], b[1] - 10),
+            cv2.FONT_HERSHEY_PLAIN,
+            1,
+            (255, 255, 255),
+            1,
+        )
 
     def preprocess(self, path: str) -> np.ndarray:
         """Preprocess image to 800x1333 - dependent on small/largest sides"""
         if os.path.isfile(path):
-            if path.rsplit('.')[-1].lower() not in self.valid_extensions:
+            if path.rsplit(".")[-1].lower() not in self.valid_extensions:
                 raise ValueError("Unsupported image type")
 
         image = cv2.imread(path)
@@ -70,7 +80,9 @@ class ObjectDetectionProcessing:
 
         self.scale = scale
         # resize the image with the computed scale
-        image = cv2.resize(image, (int(round(cols * scale)), int(round((rows * scale)))))
+        image = cv2.resize(
+            image, (int(round(cols * scale)), int(round((rows * scale))))
+        )
         rows, cols, cns = image.shape
 
         pad_w = 32 - rows % 32
@@ -97,39 +109,51 @@ class ObjectDetectionProcessing:
         else:
             raise ValueError("Unsupported image type")
         return temp_path
-    
-    def read_image(self, path: str, mode: ImageReadMode = ImageReadMode.UNCHANGED) -> torch.Tensor:
+
+    def read_image(
+        self, path: str, mode: ImageReadMode = ImageReadMode.UNCHANGED
+    ) -> torch.Tensor:
         """Read image into a tensor."""
         data = image.read_file(path)
         return image.decode_image(data, mode)
-    
+
     def apply_transforms(self, image: torch.Tensor) -> torch.Tensor:
         """Resize and crop the image to 800x800."""
-        transform = T.Compose([
-            T.Resize(self.resolution + self.resolution // 8, interpolation=T.InterpolationMode.BILINEAR),
-            T.CenterCrop(self.resolution),
-            T.ToTensor(),
-        ])
+        transform = T.Compose(
+            [
+                T.Resize(
+                    self.resolution + self.resolution // 8,
+                    interpolation=T.InterpolationMode.BILINEAR,
+                ),
+                T.CenterCrop(self.resolution),
+                T.ToTensor(),
+            ]
+        )
         return transform(image)
+
 
 class ONNXDetectionModel:
     def __init__(self, model_path: str):
         self.odp = ObjectDetectionProcessing()
 
         self.session = ort.InferenceSession(
-            model_path,
-            providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+            model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
         )
 
-        self.__classes = self.__load_classes(os.path.join(os.path.dirname(os.path.abspath(__file__)), "coco91_classes.txt"))
-
+        self.__classes = self.__load_classes(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "coco91_classes.txt"
+            )
+        )
 
     def __load_classes(self, path: str) -> List[str]:
         with open(path) as f:
             unique_classes = [c.strip() for c in f.readlines()]
         return unique_classes
-    
-    def predict(self, image_path: str, min_confidence: float) -> List[Tuple[list, float, int]]:
+
+    def predict(
+        self, image_path: str, min_confidence: float
+    ) -> List[Tuple[list, float, int]]:
         """Run object detection and return scaled bounding boxes."""
         input_tensor = self.odp.preprocess(image_path)
         outputs = self.session.run(None, {"input": input_tensor})
@@ -137,7 +161,7 @@ class ONNXDetectionModel:
             return []
         boxes, scores, labels = outputs[0], outputs[1], outputs[2]
         # Filter based on confidence
-        mask = scores >= (min_confidence / 100) 
+        mask = scores >= (min_confidence / 100)
         filtered_boxes = boxes[mask]
         filtered_scores = scores[mask]
         filtered_labels = labels[mask]
@@ -149,16 +173,21 @@ class ONNXDetectionModel:
             box = scaled_boxes[i].tolist()
             score = filtered_scores[i].item()
             label = filtered_labels[i].item()
-            results.append( (box, score, label) )
+            results.append((box, score, label))
         return results
-    
-    def visualize_and_save(self, image_path: str, detections: List[Tuple[list, float, int]], output_path: str):
+
+    def visualize_and_save(
+        self,
+        image_path: str,
+        detections: List[Tuple[list, float, int]],
+        output_path: str,
+    ):
         """Overlay bounding boxes on the original image and save it."""
         # Load the original image
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError(f"Failed to load image from {image_path}")
-        
+
         # Draw bounding boxes and labels
         for box, score, label in detections:
             x1, y1, x2, y2 = box
@@ -167,11 +196,20 @@ class ONNXDetectionModel:
             # Add label and confidence score
             label_text = f"{self.__classes[label]}: {score:.2f}"
             print(f"{score:.2f}")
-            cv2.putText(image, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-        
+            cv2.putText(
+                image,
+                label_text,
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.9,
+                (0, 255, 0),
+                2,
+            )
+
         # Save the image with overlaid boxes
         cv2.imwrite(output_path, image)
         print(f"Saved visualization to {output_path}")
+
 
 # # Example usage
 # image_path = 'input_images/carvision.png'

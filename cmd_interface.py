@@ -7,7 +7,9 @@ from backend.model_server import model_server
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Command line interface for image object detection")
+    parser = argparse.ArgumentParser(
+        description="Command line interface for image object detection"
+    )
     cli = MLCli(model_server.server, parser)
     cli.run_cli()
 
