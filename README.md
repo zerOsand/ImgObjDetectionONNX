@@ -96,3 +96,13 @@ python cmd_interface.py detect --input_path {path_to_input_img} --output_img {pa
 ```
 
 There are sample images present in the `input_images` directory and a `output_images` directory where you can store your results as a way to test out this project.
+
+### ONNX Export Process
+In the file `pth2onnx.py`, I converted the `retinanet_resnet50_fpn_coco-eeacb38b.pth` model into an ONNX model.
+
+To achieve this, I borrowed insights from the [ImageAI](https://github.com/OlafenwaMoses/ImageAI/tree/master) repository while using the code provided in the [image_object_detection](https://github.com/Shreneken/image_object_detection) repository.
+
+The `pth` file is loaded into a PyTorch model. Then, (in previous versions), I took a sample image and preprocessed it according to the RetinaNet input restraints. However, there were many issues with this, and so I ended up creating a `dummy_input` variable that creates a random (1, 3, 800, 1333) Torch Tensor (batch, channels, height, width). 
+
+Unfortunately, the model does poorly on images with a longer height compared to a longer width due to the ONNX input limitations that expect a fixed input size. With and without dynamic axes, this issue still was very difficult to find a solution to. However, I do plan to fix this issue.
+

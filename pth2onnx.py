@@ -115,14 +115,12 @@ def preprocess(dir_path):
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-# input_image = preprocess('input_images/image2.jpg')
-# print(input_image.tensors.shape)
 
 model = torchvision.models.detection.retinanet_resnet50_fpn(
     pretrained=False, num_classes=91, pretrained_backbone=False
 )
 
-dummy_input = torch.randn(1, 3, 1333, 800)
+dummy_input = torch.randn(1, 3, 800, 1333)
 
 state_dict = torch.load(
     "ml/models/retinanet_resnet50_fpn_coco-eeacb38b.pth", map_location=device
